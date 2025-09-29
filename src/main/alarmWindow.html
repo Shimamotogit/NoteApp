@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>アラーム</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: 'Segoe UI', sans-serif;
+        background: linear-gradient(135deg, #1e1f3b, #111224);
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+      }
+
+      .alarm-card {
+        width: 90%;
+        max-width: 360px;
+        padding: 24px;
+        background: rgba(20, 22, 40, 0.85);
+        border-radius: 20px;
+        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.4);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+      }
+
+      h1 {
+        font-size: 1.4rem;
+        margin: 0;
+      }
+
+      p {
+        margin: 0;
+        line-height: 1.6;
+        opacity: 0.85;
+      }
+
+      button {
+        background: linear-gradient(120deg, #ff5f6d, #ffc371);
+        border: none;
+        color: #141628;
+        padding: 12px;
+        border-radius: 999px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 30px rgba(255, 99, 132, 0.4);
+      }
+
+      .time-info {
+        font-size: 0.85rem;
+        opacity: 0.6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="alarm-card">
+      <h1 id="alarm-title">アラーム</h1>
+      <p id="alarm-message">時間になりました。</p>
+      <p class="time-info" id="alarm-time"></p>
+      <button id="stop-button">アラームを停止</button>
+    </div>
+    <script>
+      const audioContext =
+        typeof window.AudioContext !== 'undefined'
+          ? new window.AudioContext()
+          : typeof window.webkitAudioContext !== 'undefined'
+          ? new window.webkitAudioContext()
+          : null;
+      let oscillator = null;
+      let gainNode = null;
+      let volumeRampInterval = null;
+      const titleEl = document.getElementById('alarm-title');
+      const messageEl = document.getElementById('alarm-message');
+      const timeEl = document.getElementById('alarm-time');
+      const stopButton = document.getElementById('stop-button');
+      let activeReminderId = null;
+
+      const startAudio = () => {
+        if (!audioContext) {
+          return;
+        }
+        if (audioContext.state === 'suspended') {
+          audioContext.resume().catch(() => {});
+        }
+        if (oscillator) {
+          oscillator.stop();
+          oscillator.disconnect();
+          oscillator = null;
+        }
+        if (gainNode) {
+          gainNode.disconnect();
+          gainNode = null;
+        }
+        if (volumeRampInterval) {
+          clearInterval(volumeRampInterval);
+        }
+
+        gainNode = audioContext.createGain();
+        gainNode.gain.value = 0.05;
+
+        oscillator = audioContext.createOscillator();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        oscillator.start();
+
+        volumeRampInterval = setInterval(() => {
+          if (!gainNode) {
+            clearInterval(volumeRampInterval);
+            return;
+          }
+          const current = gainNode.gain.value;
+          if (current >= 1) {
+            clearInterval(volumeRampInterval);
+            return;
+          }
+          gainNode.gain.value = Math.min(1, current + 0.08);
+        }, 4000);
+      };
+
+      window.alarmAPI.onData((payload) => {
+        activeReminderId = payload.id;
+        if (payload.title) {
+          titleEl.textContent = payload.title;
+        }
+        if (payload.message) {
+          messageEl.textContent = payload.message;
+        }
+        if (payload.triggerAt) {
+          const dt = new Date(payload.triggerAt);
+          if (!Number.isNaN(dt.getTime())) {
+            timeEl.textContent = `${dt.toLocaleDateString()} ${dt.toLocaleTimeString()}`;
+          }
+        }
+        startAudio();
+      });
+
+      stopButton.addEventListener('click', () => {
+        if (volumeRampInterval) {
+          clearInterval(volumeRampInterval);
+          volumeRampInterval = null;
+        }
+        if (oscillator) {
+          try {
+            oscillator.stop();
+          } catch (err) {}
+          oscillator.disconnect();
+          oscillator = null;
+        }
+        if (gainNode) {
+          gainNode.disconnect();
+          gainNode = null;
+        }
+        if (activeReminderId) {
+          window.alarmAPI.stop(activeReminderId);
+        }
+      });
+    </script>
+  </body>
+</html>
