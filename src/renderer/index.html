@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FlowNote</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">✶</div>
+          <div class="brand-meta">
+            <h1>FlowNote</h1>
+            <span>Capture. Recall. Flow.</span>
+          </div>
+          <button id="new-note" class="primary">＋ 新規 (Ctrl+N)</button>
+        </div>
+        <div class="search-box">
+          <input id="search-input" type="text" placeholder="全メモから検索 (Ctrl+F)" />
+        </div>
+        <div id="search-results" class="search-results hidden"></div>
+        <div class="note-section-header">
+          <h2>メモ</h2>
+          <button id="toggle-archived" class="ghost">アーカイブ</button>
+        </div>
+        <div id="note-list" class="note-list"></div>
+      </aside>
+      <main class="workspace">
+        <div class="editor" id="editor">
+          <div class="editor-header">
+            <input id="note-title" type="text" placeholder="タイトル" />
+            <div class="editor-actions">
+              <button id="restore-note" class="ghost">復元</button>
+              <button id="open-history" class="ghost">履歴</button>
+              <button id="delete-note" class="danger">アーカイブ</button>
+            </div>
+          </div>
+          <textarea id="note-content" placeholder="思考をそのまま書き出そう..." spellcheck="false"></textarea>
+        </div>
+        <section class="insights">
+          <div class="reminder-section">
+            <header>
+              <h2>リマインダー</h2>
+              <button id="open-reminder-form" class="ghost">追加</button>
+            </header>
+            <div id="reminder-list" class="reminder-list"></div>
+          </div>
+          <div class="history-drawer hidden" id="history-drawer">
+            <header>
+              <h2>変更履歴</h2>
+              <button id="close-history" class="ghost">閉じる</button>
+            </header>
+            <div id="history-list" class="history-list"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="reminder-dialog" class="dialog hidden">
+      <div class="dialog-content">
+        <header>
+          <h3>リマインダーを追加</h3>
+        </header>
+        <form id="reminder-form">
+          <label>
+            タイトル
+            <input type="text" name="title" placeholder="例：クライアントへ電話" />
+          </label>
+          <label>
+            メッセージ
+            <textarea name="message" rows="2" placeholder="通知に表示する内容"></textarea>
+          </label>
+          <label>
+            時刻
+            <input type="datetime-local" name="triggerAt" required />
+          </label>
+          <label>
+            種類
+            <select name="type">
+              <option value="notification">Windows通知</option>
+              <option value="alarm">アラーム</option>
+            </select>
+          </label>
+          <label>
+            紐づくメモ (任意)
+            <select name="noteId" id="reminder-note-select"></select>
+          </label>
+          <div class="dialog-actions">
+            <button type="button" id="cancel-reminder" class="ghost">キャンセル</button>
+            <button type="submit" class="primary">保存</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <script type="module" src="./renderer.js"></script>
+  </body>
+</html>
